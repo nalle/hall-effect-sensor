@@ -1,0 +1,46 @@
+Partlist
+
+Exported from current.sch at 2016-11-06 10:24
+
+EAGLE Version 7.7.0 Copyright (c) 1988-2016 CadSoft
+
+Assembly variant: 
+
+Part     Value              Device             Package               Library             Sheet
+
+C1       10uF               CAP_POLPTH1        CPOL-RADIAL-100UF-25V SparkFun-Passives   1
+C2       10uF               CAP_POLPTH2        CPOL-RADIAL-10UF-25V  SparkFun-Capacitors 1
+C3       22pF               C5/2.5             C5B2.5                capacitor-wima      1
+C4       22pF               C5/2.5             C5B2.5                capacitor-wima      1
+C5       10uF               CAP_POLPTH1        CPOL-RADIAL-100UF-25V SparkFun-Passives   1
+C6       10uF               CAP_POLPTH1        CPOL-RADIAL-100UF-25V SparkFun-Passives   1
+H1       MOUNT-PAD-ROUND3.6 MOUNT-PAD-ROUND3.6 3,6-PAD               holes               1
+J1       USB-MICROB         USB-MICROB         USB-MICROB            SparkFun-Connectors 1
+J2       3-pol              AUDIO-JACKPTH      AUDIO-JACK            SparkFun-Connectors 1
+J3       3-pol              AUDIO-JACKPTH      AUDIO-JACK            SparkFun-Connectors 1
+J4       3-pol              AUDIO-JACKPTH      AUDIO-JACK            SparkFun-Connectors 1
+LED1     5mm green          LED5MM             LED5MM                led                 1
+Q1       16MHz              XTAL/S             QS                    special             1
+R1       33                 R-US_0204/5        0204/5                resistor            1
+R2       10K                R-US_0204/5        0204/5                resistor            1
+R3       10K                R-US_0204/5        0204/5                resistor            1
+R4       33                 R-US_0204/5        0204/5                resistor            1
+R5       10K                R-US_0204/5        0204/5                resistor            1
+R6       10K                R-US_0204/5        0204/5                resistor            1
+R7       33                 R-US_0204/5        0204/5                resistor            1
+R8       10K                R-US_0204/5        0204/5                resistor            1
+R9       10K                R-US_0204/5        0204/5                resistor            1
+R10      10K                R-US_0204/5        0204/5                resistor            1
+R11      10K                R-US_0204/5        0204/5                resistor            1
+R12      10K                R-US_0204/5        0204/5                resistor            1
+R13      180                R-US_0204/5        0204/5                resistor            1
+R14      100                R-US_0204/5        0204/5                resistor            1
+R15      470                R-US_0204/5        0204/5                resistor            1
+R16      100                R-US_0204/5        0204/5                resistor            1
+R17      10K                R-US_0204/5        0204/5                resistor            1
+R18      10K                R-US_0204/5        0204/5                resistor            1
+SV1                         MA03-2             MA03-2                con-lstb            1
+SV2                         MA05-2             MA05-2                con-lstb            1
+SV3      rgb-led            MA04-1             MA04-1                con-lstb            1
+SW1                         SW_DIP-2           EDG-02                special             1
+U1       ATMEGA328P_PDIP    ATMEGA328P_PDIP    DIL28-3               SparkFun-DigitalIC  1
