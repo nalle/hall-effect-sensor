@@ -22,7 +22,8 @@ typedef struct {
 Sensors sensors;
 
 static byte mac[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
-EthernetServer server = EthernetServer(1337);
+EthernetServer json = EthernetServer(1337);
+EthernetServer http = EthernetServer(1337);
 
 void setup () {
   Serial.begin(57600);
@@ -41,7 +42,8 @@ void setup () {
     EEPROM.write(1, '#');
   }
   Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider);
-  server.begin();
+  json.begin();
+  http.begin();
 
   configureSensors();
   Serial.println(" done");
@@ -95,11 +97,34 @@ static int readSensor(int sensor, int voltage = 230) {
 void loop() {
   Ethernet.maintain();
 
-  EthernetClient client = server.available();
-  if (client == true) {
+  EthernetClient client;
+  if (client = json.available()) {
     char reply[100];
     sprintf(reply, "{\"uptime\": %i, \"rollover\": %i, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis() / 1000, readSensor(1), readSensor(2), readSensor(3));
     server.print(reply);
+    client.stop();
+  }
+  
+  if (client = http.available()) {
+    size_t size;
+    uint8_t b;
+    int crlf = 0;
+    while(client.read(&b, 1) == 1 && crlf < 4) {
+      if ((crlf & 0x1) && b == '\n') {
+        ++crlf;
+      } else if (!(crlf & 0x1) && b == '\r') {
+        ++crlf;
+      } else {
+        crlf = 0;
+      }
+    }
+    if (crlf == 4) {
+      char reply[100];
+      strcpy(reply, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n\r\n");
+      server.println(reply);
+      sprintf(reply, "{\"uptime\": %i, \"rollover\": %i, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis() / 1000, readSensor(1), readSensor(2), readSensor(3));
+      server.println(reply);
+    }
     client.stop();
   }
 }
