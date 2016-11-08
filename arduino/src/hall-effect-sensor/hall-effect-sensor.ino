@@ -39,16 +39,16 @@ void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
 void dhcpOptionProvider(const uint8_t messageType, EthernetUDP *dhcpUdpSocket) {
     uint8_t buffer[] = {
         dhcpClientIdentifier,
-        0x08,
-        'M','S','F','T',' ','5','.','0'
+        0x06,
+        '_','N','A','L','L','E',
     };
-    dhcpUdpSocket->write(buffer, 10);
+    dhcpUdpSocket->write(buffer, 8);
 }
 
 
 void setup () {
 	Serial.begin(57600);
-	Serial.println("Booting up...");
+	Serial.print("Booting up...");
 
 	if (EEPROM.read(1) == '#') {
 		for (int i = 3; i < 6; i++) {
@@ -62,13 +62,11 @@ void setup () {
 		}
 		EEPROM.write(1, '#');
 	}
-  // We need to supply Client ID to the DHCP Request so that we have some way to identify and find the circuit
 	Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider);
 	server.begin();
 
 	configureSensors();
 	Serial.println(" done");
-	Serial.println("Ready to serve!");
 	return;
 }
 
@@ -77,7 +75,6 @@ void configureSensors() {
 	sensors.two.current(5, calibrationValue);
 	sensors.three.current(4, calibrationValue);
 }
-
 
 static int readSensor(int sensor, int voltage = 230) {
   return random(10,20);
@@ -94,23 +91,14 @@ static int readSensor(int sensor, int voltage = 230) {
 	}
 }
 
-char var1, var2, var3 = "10";
-char time = char(millis());
 void loop() {
 	Ethernet.maintain();
 
 	EthernetClient client = server.available();
 	if (client == true) {
-    server.print("{'uptime': ");
-    server.print(millis());
-    server.print(", 'sensors': ");
-    server.print(", {1:");
-    server.print(readSensor(1));
-    server.print(", 2: ");
-    server.print(readSensor(2));
-    server.print(", 3: ");
-    server.print(readSensor(3));
-    server.print("}}\n");
+    char reply[100];
+    sprintf(reply, "{\"uptime\": %i, \"rollover\": %i, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
+    server.print(reply);
 		client.stop();
 	}
 }
