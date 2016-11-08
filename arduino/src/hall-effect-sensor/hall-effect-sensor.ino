@@ -1,4 +1,10 @@
-#include <Ethernet.h>
+#include <Dhcp.h>
+#include <Dns.h>
+#include <ethernet_comp.h>
+#include <UIPClient.h>
+#include <UIPEthernet.h>
+#include <UIPServer.h>
+#include <UIPUdp.h>
 #include <EmonLib.h>
 #include <EEPROM.h>
 #include <TrueRandom.h>
@@ -18,6 +24,28 @@ Sensors sensors;
 static byte mac[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
 EthernetServer server = EthernetServer(1337);
 
+void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
+    uint8_t opt_len = dhcpUdpSocket->read();
+
+    if (optionType == 15) { // domain name
+        // read the value with dhcpUdpSocket->read()
+    } else {
+        while (opt_len--) {
+            dhcpUdpSocket->read();
+        }        
+    }
+}
+
+void dhcpOptionProvider(const uint8_t messageType, EthernetUDP *dhcpUdpSocket) {
+    uint8_t buffer[] = {
+        dhcpClientIdentifier,
+        0x08,
+        'M','S','F','T',' ','5','.','0'
+    };
+    dhcpUdpSocket->write(buffer, 10);
+}
+
+
 void setup () {
 	Serial.begin(57600);
 	Serial.println("Booting up...");
@@ -35,7 +63,7 @@ void setup () {
 		EEPROM.write(1, '#');
 	}
   // We need to supply Client ID to the DHCP Request so that we have some way to identify and find the circuit
-	Ethernet.begin(mac);
+	Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider);
 	server.begin();
 
 	configureSensors();
@@ -52,6 +80,7 @@ void configureSensors() {
 
 
 static int readSensor(int sensor, int voltage = 230) {
+  return random(10,20);
 	switch (sensor) {
 		case 1:
 			return sensors.one.calcIrms(1480) * voltage;
@@ -64,14 +93,24 @@ static int readSensor(int sensor, int voltage = 230) {
 			break;
 	}
 }
-char reply;
+
+char var1, var2, var3 = "10";
+char time = char(millis());
 void loop() {
 	Ethernet.maintain();
 
 	EthernetClient client = server.available();
 	if (client == true) {
-		sprintf(reply, "{'sensors': 'uptime': '%d', {1: %d, 2: %d, 3: %d'}}",millis(),readSensor(1), readSensor(2), readSensor(3));
-		server.write(reply);
+    server.print("{'uptime': ");
+    server.print(millis());
+    server.print(", 'sensors': ");
+    server.print(", {1:");
+    server.print(readSensor(1));
+    server.print(", 2: ");
+    server.print(readSensor(2));
+    server.print(", 3: ");
+    server.print(readSensor(3));
+    server.print("}}\n");
 		client.stop();
 	}
 }
