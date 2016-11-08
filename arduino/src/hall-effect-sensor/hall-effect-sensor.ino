@@ -24,6 +24,30 @@ Sensors sensors;
 static byte mac[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
 EthernetServer server = EthernetServer(1337);
 
+void setup () {
+	Serial.begin(57600);
+	Serial.print("Booting up...");
+
+	if (EEPROM.read(1) == '#') {
+		for (int i = 4; i < 6; i++) {
+	    	mac[i] = EEPROM.read(i);
+	    }
+	} else {	
+		randomSeed(analogRead(samplePin));
+		for (int i = 4; i < 6; i++) {
+			mac[i] = random(0, 255);
+			EEPROM.write(i, mac[i]);
+		}
+		EEPROM.write(1, '#');
+	}
+	Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider);
+	server.begin();
+
+	configureSensors();
+	Serial.println(" done");
+	return;
+}
+
 void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
     uint8_t opt_len = dhcpUdpSocket->read();
 
@@ -37,37 +61,14 @@ void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
 }
 
 void dhcpOptionProvider(const uint8_t messageType, EthernetUDP *dhcpUdpSocket) {
+    char m[5];
+    snprintf(m, 5, "%02x%02x", mac[4], mac[5]);
     uint8_t buffer[] = {
         dhcpClientIdentifier,
         0x06,
-        '_','N','A','L','L','E',
+        'p','p',m[0],m[1],m[2],m[3],
     };
     dhcpUdpSocket->write(buffer, 8);
-}
-
-
-void setup () {
-	Serial.begin(57600);
-	Serial.print("Booting up...");
-
-	if (EEPROM.read(1) == '#') {
-		for (int i = 3; i < 6; i++) {
-	    	mac[i] = EEPROM.read(i);
-	    }
-	} else {	
-		randomSeed(analogRead(samplePin));
-		for (int i = 3; i < 6; i++) {
-			mac[i] = random(0, 255);
-			EEPROM.write(i, mac[i]);
-		}
-		EEPROM.write(1, '#');
-	}
-	Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider);
-	server.begin();
-
-	configureSensors();
-	Serial.println(" done");
-	return;
 }
 
 void configureSensors() {
