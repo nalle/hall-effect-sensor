@@ -26,7 +26,7 @@ EthernetServer server = EthernetServer(80);
 
 void setup () {
   Serial.begin(57600);
-  Serial.print("Booting up...");
+  Serial.print(F("Booting up..."));
 
   if (EEPROM.read(1) == '#') {
     for (int i = 4; i < 6; i++) {
@@ -44,7 +44,7 @@ void setup () {
   server.begin();
 
   configureSensors();
-  Serial.println(" done");
+  Serial.println(F(" done"));
   return;
 }
 
@@ -93,7 +93,7 @@ void loop() {
   EthernetClient client = server.available();
   if (client == true) {
     char reply[64];
-    server.print("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n\r\n");
+    server.print(F("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n\r\n"));
     sprintf(reply, "{\"uptime\": %lu, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
     server.print(reply);
     client.stop();
