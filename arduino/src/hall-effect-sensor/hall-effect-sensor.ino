@@ -50,13 +50,8 @@ void setup () {
 
 void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
   uint8_t opt_len = dhcpUdpSocket->read();
-
-  if (optionType == 15) { // domain name
-    // read the value with dhcpUdpSocket->read()
-  } else {
-    while (opt_len--) {
-      dhcpUdpSocket->read();
-    }
+  while (opt_len--) {
+    dhcpUdpSocket->read();
   }
 }
 
