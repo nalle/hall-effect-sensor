@@ -22,7 +22,7 @@ typedef struct {
 Sensors sensors;
 
 static byte mac[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
-EthernetServer server = EthernetServer(1337);
+EthernetServer server = EthernetServer(80);
 
 void setup () {
   Serial.begin(57600);
@@ -93,7 +93,8 @@ void loop() {
   EthernetClient client = server.available();
   if (client == true) {
     char reply[100];
-    sprintf(reply, "{\"uptime\": %i, \"rollover\": %i, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis() / 1000, readSensor(1), readSensor(2), readSensor(3));
+    server.print("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n\r\n");
+    sprintf(reply, "{\"uptime\": %lu, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
     server.print(reply);
     client.stop();
   }
