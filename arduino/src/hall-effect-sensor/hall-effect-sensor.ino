@@ -11,7 +11,17 @@
 // Sample data for the mac address generation
 #define samplePin 0
 // Calibration value for the SCT-013-000s
-#define calibrationValue 6.666667
+#define ACcalibrationValue 6.666667
+#define DCcalibrationValue 6.666667
+#define ERROR (RGB){ HIGH, LOW, LOW };
+#define LOADING (RGB){ HIGH, HIGH, LOW };
+#define OK (RGB){ LOW, HIGH, LOW };
+
+struct RGB {
+  byte r;
+  byte g;
+  byte b;
+};
 
 typedef struct {
   EnergyMonitor one;
@@ -19,20 +29,21 @@ typedef struct {
   EnergyMonitor three;
 } Sensors;
 
-Sensors sensors;
-
+RGB LED = ERROR;
 static byte mac[6] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+Sensors sensors;
 EthernetServer server = EthernetServer(80);
 
-void setup () {
-  Serial.begin(57600);
-  Serial.print(F("Booting up..."));
-
+void generateMacAddress() {
+  Serial.println(F("Checking if we have a mac address in EEPROM"));
   if (EEPROM.read(1) == '#') {
+    Serial.println(F("Found address in EEPROM, using that"));
     for (int i = 4; i < 6; i++) {
       mac[i] = EEPROM.read(i);
     }
   } else {
+    Serial.println(F("Did not find address in EEPROM, generating a new one"));
     randomSeed(analogRead(samplePin));
     for (int i = 4; i < 6; i++) {
       mac[i] = random(0, 255);
@@ -40,12 +51,47 @@ void setup () {
     }
     EEPROM.write(1, '#');
   }
-  Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider);
+}
+
+void initializeRGBdiode() {
+  pinMode(3, OUTPUT);
+  digitalWrite(3, LOW);
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
+  pinMode(6, OUTPUT);
+  digitalWrite(6, LOW);
+  setRGBLEDColor();
+}
+
+void setRGBLEDColor() {
+  digitalWrite(3, LED.r);
+  digitalWrite(5, LED.g);
+  digitalWrite(6, LED.b);
+}
+
+void setup () {
+  Serial.begin(57600);
+  Serial.println(F("Booting up..."));
+  initializeRGBdiode();
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
+
+  if (digitalRead(7) && digitalRead(8)) {
+    for (int i = 0 ; i < EEPROM.length() ; i++) {
+      EEPROM.write(i, 0);
+    }
+  }
+  generateMacAddress();
+  if (Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider) == 0) {
+    LED = ERROR;
+    setRGBLEDColor();
+  }
   server.begin();
 
   configureSensors();
-  Serial.println(F(" done"));
-  return;
+  LED = OK;
+  setRGBLEDColor();
+  Serial.println(F("Finished booting, going into normal operations"));
 }
 
 void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
@@ -67,9 +113,17 @@ void dhcpOptionProvider(const uint8_t messageType, EthernetUDP *dhcpUdpSocket) {
 }
 
 void configureSensors() {
-  sensors.one.current(3, calibrationValue);
-  sensors.two.current(5, calibrationValue);
-  sensors.three.current(4, calibrationValue);
+  if (digitalRead(7) && !digitalRead(8)) {
+    Serial.println(F("Setting up sensors in DC Mode"));
+    sensors.one.current(3, DCcalibrationValue);
+    sensors.two.current(5, DCcalibrationValue);
+    sensors.three.current(4, DCcalibrationValue);
+  } else {
+    Serial.println(F("Setting up sensors in AC Mode"));
+    sensors.one.current(3, ACcalibrationValue);
+    sensors.two.current(5, ACcalibrationValue);
+    sensors.three.current(4, ACcalibrationValue);
+  }
 }
 
 static int readSensor(int sensor, int voltage = 230) {
@@ -88,6 +142,7 @@ static int readSensor(int sensor, int voltage = 230) {
 }
 
 void loop() {
+  setRGBLEDColor();
   Ethernet.maintain();
 
   EthernetClient client = server.available();
