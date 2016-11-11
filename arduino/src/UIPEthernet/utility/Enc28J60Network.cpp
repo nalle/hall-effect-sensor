@@ -247,11 +247,15 @@ Enc28J60Network::sendPacket(memhandle handle)
   writeRegPair(ETXNDL, end);
   // send the contents of the transmit buffer onto the network
   writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
-  // Reset the transmit logic problem. See Rev. B4 Silicon Errata point 12.
+  // Reset the transmit logic problem. See Rev. B4 Silicon Errata point 12. 
+  // https://forum.mysensors.org/topic/536/problems-with-enc28j60-losing-connection-freezing-using-uipethernet-or-ethershield-read-this
+  // Suggests that there are more resets needed so we put them in
   if( (readReg(EIR) & EIR_TXERIF) )
-    {
-      writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRTS);
-    }
+  {
+    writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
+    writeOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
+    writeOp(ENC28J60_BIT_FIELD_CLR, EIR, EIR_TXERIF); // Might be overkill but advised by Microchip Errata point 12, //MagKas 2014-10-25
+  }
 
   //restore data on control-byte position
   if (data)
