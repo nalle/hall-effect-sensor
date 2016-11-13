@@ -31,19 +31,18 @@ typedef struct {
 
 RGB LED = ERROR;
 static byte mac[6] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
+unsigned long previous = millis();
+unsigned long current = millis();
 
 Sensors sensors;
 EthernetServer server = EthernetServer(80);
 
 void generateMacAddress() {
-  Serial.println(F("Checking if we have a mac address in EEPROM"));
   if (EEPROM.read(1) == '#') {
-    Serial.println(F("Found address in EEPROM, using that"));
     for (int i = 4; i < 6; i++) {
       mac[i] = EEPROM.read(i);
     }
   } else {
-    Serial.println(F("Did not find address in EEPROM, generating a new one"));
     randomSeed(analogRead(samplePin));
     for (int i = 4; i < 6; i++) {
       mac[i] = random(0, 255);
@@ -71,7 +70,7 @@ void setRGBLEDColor() {
 
 void setup () {
   Serial.begin(57600);
-  Serial.println(F("Booting up..."));
+  Serial.print(F("Booting up... "));
   initializeRGBdiode();
   pinMode(7, INPUT);
   pinMode(8, INPUT);
@@ -91,7 +90,7 @@ void setup () {
   configureSensors();
   LED = OK;
   setRGBLEDColor();
-  Serial.println(F("Finished booting, going into normal operations"));
+  Serial.println(F("done"));
 }
 
 void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
@@ -142,6 +141,12 @@ static int readSensor(int sensor, int voltage = 230) {
 }
 
 void loop() {
+  /* Ugly hack to solve that it goes bad after >2000 seconds of requests */
+  current = millis();
+  if (current-previous > 30000) {
+    Enc28J60.init(mac);
+    previous = millis();
+  }
   setRGBLEDColor();
   Ethernet.maintain();
 
@@ -152,5 +157,6 @@ void loop() {
     sprintf(reply, "{\"uptime\": %lu, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
     server.print(reply);
     client.stop();
+
   }
 }
