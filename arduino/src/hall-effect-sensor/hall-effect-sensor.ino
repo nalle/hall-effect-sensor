@@ -1,5 +1,6 @@
 #include <Dhcp.h>
 #include <Dns.h>
+#include <avr/pgmspace.h>
 #include <ethernet_comp.h>
 #include <UIPClient.h>
 #include <UIPEthernet.h>
@@ -113,12 +114,10 @@ void dhcpOptionProvider(const uint8_t messageType, EthernetUDP *dhcpUdpSocket) {
 
 void configureSensors() {
   if (digitalRead(7) && !digitalRead(8)) {
-    Serial.println(F("Setting up sensors in DC Mode"));
     sensors.one.current(3, DCcalibrationValue);
     sensors.two.current(5, DCcalibrationValue);
     sensors.three.current(4, DCcalibrationValue);
   } else {
-    Serial.println(F("Setting up sensors in AC Mode"));
     sensors.one.current(3, ACcalibrationValue);
     sensors.two.current(5, ACcalibrationValue);
     sensors.three.current(4, ACcalibrationValue);
@@ -126,7 +125,6 @@ void configureSensors() {
 }
 
 static int readSensor(int sensor, int voltage = 230) {
-  return random(10, 20);
   switch (sensor) {
     case 1:
       return sensors.one.calcIrms(1480) * voltage;
@@ -152,11 +150,10 @@ void loop() {
 
   EthernetClient client = server.available();
   if (client == true) {
-    char reply[64];
-    server.print(F("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n\r\n"));
-    sprintf(reply, "{\"uptime\": %lu, \"sensors\": {\"1\": %i, \"2\": %i, \"3\": %i}}\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
+    char reply[110];
+    server.println(F("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n"));
+    sprintf(reply, "uptime %lu\ncurrent{sensor=\"1\"} %i\ncurrent{sensor=\"2\"} %i\ncurrent{sensor=\"3\"} %i\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
     server.print(reply);
     client.stop();
-
   }
 }
