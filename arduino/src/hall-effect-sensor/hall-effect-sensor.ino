@@ -12,11 +12,13 @@
 // Sample data for the mac address generation
 #define samplePin 0
 // Calibration value for the SCT-013-000s
-#define ACcalibrationValue 6.666667
-#define DCcalibrationValue 6.666667
+#define ACcalibrationValue 22
+#define DCcalibrationValue 22
+#define voltage 230
 #define ERROR (RGB){ HIGH, LOW, LOW };
 #define LOADING (RGB){ HIGH, HIGH, LOW };
 #define OK (RGB){ LOW, HIGH, LOW };
+#define F_CPU 16000000UL
 
 struct RGB {
   byte r;
@@ -69,20 +71,36 @@ void setRGBLEDColor() {
   digitalWrite(6, LED.b);
 }
 
+void blinkRGB() {
+  for (int i = 0; i < 10; i++) {
+    if (i % 2 == 0) {
+      digitalWrite(3, HIGH);
+      digitalWrite(5, HIGH);
+      digitalWrite(6, HIGH);
+    } else {
+      digitalWrite(3, LOW);
+      digitalWrite(5, LOW);
+      digitalWrite(6, LOW);
+    }
+    delay(100);
+  }
+}
+
 void setup () {
   Serial.begin(57600);
-  Serial.print(F("Booting up... "));
   initializeRGBdiode();
   pinMode(7, INPUT);
   pinMode(8, INPUT);
-
-  if (digitalRead(7) && digitalRead(8)) {
+  if (digitalRead(7) && digitalRead(8)) { 
     for (int i = 0 ; i < EEPROM.length() ; i++) {
       EEPROM.write(i, 0);
     }
+    blinkRGB();
   }
+
   generateMacAddress();
-  if (Ethernet.begin(mac, (DhcpOptionParser *) &dhcpOptionParser, (DhcpOptionProvider *) &dhcpOptionProvider) == 0) {
+
+  if (Ethernet.begin(mac) == 0) {
     LED = ERROR;
     setRGBLEDColor();
   }
@@ -91,25 +109,6 @@ void setup () {
   configureSensors();
   LED = OK;
   setRGBLEDColor();
-  Serial.println(F("done"));
-}
-
-void dhcpOptionParser(const uint8_t optionType, EthernetUDP *dhcpUdpSocket) {
-  uint8_t opt_len = dhcpUdpSocket->read();
-  while (opt_len--) {
-    dhcpUdpSocket->read();
-  }
-}
-
-void dhcpOptionProvider(const uint8_t messageType, EthernetUDP *dhcpUdpSocket) {
-  char m[5];
-  snprintf(m, 5, "%02x%02x", mac[4], mac[5]);
-  uint8_t buffer[] = {
-    dhcpClientIdentifier,
-    0x06,
-    'p', 'p', m[0], m[1], m[2], m[3],
-  };
-  dhcpUdpSocket->write(buffer, 8);
 }
 
 void configureSensors() {
@@ -124,7 +123,7 @@ void configureSensors() {
   }
 }
 
-static int readSensor(int sensor, int voltage = 230) {
+int readSensor(int sensor) {
   switch (sensor) {
     case 1:
       return sensors.one.calcIrms(1480) * voltage;
@@ -136,6 +135,11 @@ static int readSensor(int sensor, int voltage = 230) {
       return sensors.three.calcIrms(1480) * voltage;
       break;
   }
+}
+char* intToCharFloat(int value) {
+  char *buf = (char *) malloc(sizeof(char) * 6);
+  dtostrf(value/100.0, 4, 2, buf);
+  return buf;
 }
 
 void loop() {
@@ -151,9 +155,16 @@ void loop() {
   EthernetClient client = server.available();
   if (client == true) {
     char reply[110];
+    char* sensor1_value = intToCharFloat(readSensor(1));
+    char* sensor2_value = intToCharFloat(readSensor(2));
+    char* sensor3_value = intToCharFloat(readSensor(3));
+    
     server.println(F("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: Closed\r\n"));
-    sprintf(reply, "uptime %lu\ncurrent{sensor=\"1\"} %i\ncurrent{sensor=\"2\"} %i\ncurrent{sensor=\"3\"} %i\n", millis()/1000, readSensor(1), readSensor(2), readSensor(3));
+    sprintf(reply, "uptime %lu\ncurrent{sensor=\"1\"} %s\ncurrent{sensor=\"2\"} %s\ncurrent{sensor=\"3\"} %s\n", millis()/1000, sensor1_value, sensor2_value, sensor3_value);
     server.print(reply);
     client.stop();
+    free(sensor1_value);
+    free(sensor2_value);
+    free(sensor3_value);
   }
 }

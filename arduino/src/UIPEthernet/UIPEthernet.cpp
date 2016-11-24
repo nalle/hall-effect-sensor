@@ -56,12 +56,11 @@ UIPEthernetClass::UIPEthernetClass()
 
 #if UIP_UDP
 int
-UIPEthernetClass::begin(const uint8_t* mac, DhcpOptionParser* optionParser, DhcpOptionProvider* optionProvider)
+UIPEthernetClass::begin(const uint8_t* mac)
 {
   static DhcpClass s_dhcp;
   _dhcp = &s_dhcp;
-  _dhcp->setOptionParser(optionParser);
-  _dhcp->setOptionProvider(optionProvider);
+
   // Initialise the basic info
   init(mac);
 
@@ -76,9 +75,7 @@ UIPEthernetClass::begin(const uint8_t* mac, DhcpOptionParser* optionParser, Dhcp
   return ret;
 }
 #endif
-UIPEthernetClass::begin(const uint8_t* mac) {
-	return begin(mac, NULL, NULL);
-}
+
 void
 UIPEthernetClass::begin(const uint8_t* mac, IPAddress ip)
 {

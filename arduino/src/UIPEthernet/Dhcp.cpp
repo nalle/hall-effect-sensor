@@ -240,16 +240,10 @@ void DhcpClass::send_DHCP_MESSAGE(uint8_t messageType, uint16_t secondsElapsed)
     buffer[5] = domainName;
     buffer[6] = dhcpT1value;
     buffer[7] = dhcpT2value;
-	
-    _dhcpUdpSocket.write(buffer, 8);
-
-    if (_optionProvider != NULL) {
-        // If we have a custom option provider - pass the socket to it.
-        (*_optionProvider)(messageType, &_dhcpUdpSocket);
-    }
+    buffer[8] = endOption;
     
     //put data in W5100 transmit buffer
-    _dhcpUdpSocket.write(endOption);
+    _dhcpUdpSocket.write(buffer, 9);
 
     _dhcpUdpSocket.endPacket();
 }
@@ -258,8 +252,7 @@ uint8_t DhcpClass::parseDHCPResponse(unsigned long responseTimeout, uint32_t& tr
 {
     uint8_t type = 0;
     uint8_t opt_len = 0;
-    uint8_t optionType = 0;
-	
+     
     unsigned long startTime = millis();
 
     while(_dhcpUdpSocket.parsePacket() <= 0)
@@ -296,8 +289,7 @@ uint8_t DhcpClass::parseDHCPResponse(unsigned long responseTimeout, uint32_t& tr
 
         while (_dhcpUdpSocket.available() > 0) 
         {
-			optionType = _dhcpUdpSocket.read();
-            switch (optionType) 
+            switch (_dhcpUdpSocket.read()) 
             {
                 case endOption :
                     break;
@@ -370,16 +362,11 @@ uint8_t DhcpClass::parseDHCPResponse(unsigned long responseTimeout, uint32_t& tr
                     break;
 
                 default :
-                    if (_optionParser != NULL) {
-                        // If we have a custom option parser - pass the value to it.
-                        (*_optionParser)(optionType, &_dhcpUdpSocket);
-                    } else {
-                        opt_len = _dhcpUdpSocket.read();
-                        // Skip over the rest of this option
-                        while (opt_len--)
-                        {
-                            _dhcpUdpSocket.read();
-                        }
+                    opt_len = _dhcpUdpSocket.read();
+                    // Skip over the rest of this option
+                    while (opt_len--)
+                    {
+                        _dhcpUdpSocket.read();
                     }
                     break;
             }
@@ -489,12 +476,3 @@ void DhcpClass::printByte(char * buf, uint8_t n ) {
     *str-- = c < 10 ? c + '0' : c + 'A' - 10;
   } while(n);
 }
-
-void DhcpClass::setOptionParser(DhcpOptionParser* parser) {
-    _optionParser = parser;
-}
-
-void DhcpClass::setOptionProvider(DhcpOptionProvider* provider) {
-    _optionProvider = provider;
-}
-
